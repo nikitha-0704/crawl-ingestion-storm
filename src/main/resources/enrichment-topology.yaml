@@ -1,0 +1,44 @@
+name: CrawlEnrichmentTopology
+workers: 1
+ackers: 1
+debug: false
+topologyTimeoutInSecs: 240
+maxSpoutPending: 3000
+
+pulsarTopics:
+  centralEnrichedTopic: "persistent://tenant/ns/central-enriched-events"
+  retryTopic: "persistent://tenant/ns/crawl-retry"
+  dlqTopic: "persistent://tenant/ns/crawl-dlq"
+
+retryConfig:
+  maxAttempts: 3
+
+# L2 HTTP body: {"events":[{"product_id":...,"site_id":...,"competitor_id":...,"sku":...,"avail_id":...}]} (nulls omitted)
+l2ClientConfig:
+  baseUrl: "http://localhost:8080"
+  enrichPath: "/enrich"
+  connectTimeoutMs: 2000
+  readTimeoutMs: 10000
+  maxBatchSize: 30
+
+# viesti blocks — copy/adapt from enriched-order-consumer YAML for your cluster
+pulsarClientConfig: {}
+rawPulsarSpoutConfig: {}
+retryPulsarSpoutConfig: {}
+pulsarDlqConfig: {}
+
+asyncEnrichmentBoltConfig:
+  name: asyncEnrichmentBolt
+  parallelismHint: 2
+
+centralPublisherBoltConfig:
+  name: centralPublisherBolt
+  parallelismHint: 2
+
+retryBoltConfig:
+  name: retryBolt
+  parallelismHint: 1
+
+dlqBoltConfig:
+  name: dlqBolt
+  parallelismHint: 1
