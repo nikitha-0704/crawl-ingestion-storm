@@ -1,0 +1,76 @@
+# crawl-ingestion-storm
+
+Layer **1** ingestion topology on **Apache Storm**: consume crawl events from **Pulsar** (raw + retry topics), call **Layer 2** enrichment over **HTTP** with **identifier-only** requests, merge **routing tags** and L2 data into a **consolidated payload**, publish to a **central** Pulsar topic, and route failures through a **retry** topic to **DLQ** after `maxAttempts`.
+
+## Documentation
+
+| Doc | Description |
+|-----|-------------|
+| [docs/lld-layer1.md](docs/lld-layer1.md) | Low-level design: components, tuples, streams, config |
+| [docs/sequence-flow.md](docs/sequence-flow.md) | Sequence diagrams (Mermaid): happy path, retry, DLQ |
+
+## Requirements
+
+- **JDK 8+** (project targets Java 8)
+- **Maven 3.6+**
+- Internal **Flipkart Artifactory** access for `storm-commons`, Pulsar/viesti libraries (see `pom.xml`)
+
+## Build
+
+```bash
+mvn clean compile -DskipTests
+```
+
+## Run (submit topology)
+
+Entry point:
+
+`com.flipkart.crawl.ingestion.topology.TopologyBooter`
+
+Arguments: `<configFilePath> <topologyName>`
+
+Example:
+
+```bash
+java -cp target/crawl-ingestion-storm-*.jar com.flipkart.crawl.ingestion.topology.TopologyBooter \
+  /path/to/enrichment-topology.yaml CrawlEnrichmentTopology
+```
+
+Fill `src/main/resources/enrichment-topology.yaml` (or an external file) with real **viesti/Pulsar** settings for your environment.
+
+## Topology overview
+
+1. **Raw spout** + **Retry spout** → `AsyncEnrichmentBolt` (grouped by `KEY`)
+2. **AsyncEnrichmentBolt** → **L2** (`EnrichIdsRequest` / `IdRef`); on success → `CentralPublisherBolt`; on failure → `RetryBolt` (`RETRY_STREAM`)
+3. **CentralPublisherBolt** → consolidated JSON → **central** topic (via `CentralTopicProducer`)
+4. **RetryBolt** → retry topic or `DLQBolt` (`DLQ_STREAM`) when attempts exhausted
+
+## Configuration highlights
+
+- `l2ClientConfig`: `baseUrl`, `enrichPath`, timeouts
+- `retryConfig`: `maxAttempts` (default 3 in code if unset)
+- `pulsarTopics`: central / retry / DLQ topic names for producers
+- Viesti blocks: `pulsarClientConfig`, `rawPulsarSpoutConfig`, `retryPulsarSpoutConfig`, `pulsarDlqConfig`
+
+## Project layout
+
+```text
+src/main/java/com/flipkart/crawl/ingestion/topology/
+  TopologyBooter.java, EnrichmentTopologyBuilder.java, Constants.java
+  bolt/          AsyncEnrichmentBolt, CentralPublisherBolt, RetryBolt, DLQBolt
+  client/        L2Client, L2HttpClient, *TopicProducer
+  config/        EnrichmentTopologyConfig, L2ClientConfig, RetryConfig, ...
+  guice/         GuiceEnableHook, TopologyModule
+  spout/         SpoutFactory, RawEventMapper
+  util/          RetryUtil, ConsolidatedPayloadBuilder, RoutingTagsBuilder, ...
+  model/         RawEvent, EnrichedEvent, IdRef, EnrichIdsRequest, ...
+```
+
+## Status
+
+- **Producers** (`CentralTopicProducer`, `RetryTopicProducer`, `DlqTopicProducer`) may be stubs until wired to a real Pulsar client.
+- Align **L2** request/response JSON with your service contract if it differs from the current `EnrichIdsRequest` / `ConsolidatedPayloadBuilder` assumptions.
+
+## License
+
+Proprietary / internal unless you add a public license.
