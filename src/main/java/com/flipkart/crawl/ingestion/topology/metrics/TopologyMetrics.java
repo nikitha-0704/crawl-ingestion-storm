@@ -8,23 +8,16 @@ import java.util.Map;
 
 /**
  * Per-bolt counters; each task gets its own metrics instance.
+ * Pass only the metric names this bolt uses (see {@link MetricsNames}).
  */
 public final class TopologyMetrics {
 
     private final Map<String, CountMetric> metrics = new HashMap<>();
 
-    public TopologyMetrics(TopologyContext ctx, String componentPrefix) {
-        register(ctx, componentPrefix, MetricsNames.ENRICH_SUCCESS);
-        register(ctx, componentPrefix, MetricsNames.ENRICH_FAILURE);
-        register(ctx, componentPrefix, MetricsNames.ENRICH_RETRY_EMIT);
-        register(ctx, componentPrefix, MetricsNames.ENRICH_DLQ_EMIT);
-        register(ctx, componentPrefix, MetricsNames.CENTRAL_PUBLISH_SUCCESS);
-        register(ctx, componentPrefix, MetricsNames.CENTRAL_PUBLISH_FAILURE);
-        register(ctx, componentPrefix, MetricsNames.RETRY_PUBLISH_SUCCESS);
-        register(ctx, componentPrefix, MetricsNames.RETRY_PUBLISH_FAILURE);
-        register(ctx, componentPrefix, MetricsNames.DLQ_PUBLISH_SUCCESS);
-        register(ctx, componentPrefix, MetricsNames.DLQ_PUBLISH_FAILURE);
-        register(ctx, componentPrefix, MetricsNames.VALIDATION_REJECT);
+    public TopologyMetrics(TopologyContext ctx, String componentPrefix, String... metricNames) {
+        for (String name : metricNames) {
+            register(ctx, componentPrefix, name);
+        }
     }
 
     private void register(TopologyContext ctx, String prefix, String name) {

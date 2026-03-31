@@ -21,6 +21,19 @@ Layer **1** ingestion topology on **Apache Storm**: consume crawl events from **
 mvn clean compile -DskipTests
 ```
 
+## Tests
+
+```bash
+mvn test
+```
+
+Requires the same dependencies as compile (internal Artifactory). Unit tests cover `RetryUtil`, `ValidationUtil`, and `ConsolidatedPayloadBuilder` (no Storm cluster).
+
+## Runtime behavior
+
+- **Validation:** `AsyncEnrichmentBolt` rejects inner crawl JSON without a valid `product_id` (same path as L2 failure: retry stream → `RetryBolt` / DLQ policy).
+- **Metrics:** Bolts register Storm `CountMetric`s via `TopologyMetrics` (success/failure/retry/DLQ/validation counters per component).
+
 ## Run (submit topology)
 
 Entry point:

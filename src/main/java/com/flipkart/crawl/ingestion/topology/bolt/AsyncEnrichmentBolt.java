@@ -3,7 +3,10 @@ package com.flipkart.crawl.ingestion.topology.bolt;
 import com.flipkart.crawl.ingestion.topology.Constants;
 import com.flipkart.crawl.ingestion.topology.client.L2Client;
 import com.flipkart.crawl.ingestion.topology.config.EnrichmentTopologyConfig;
+import com.flipkart.crawl.ingestion.topology.metrics.MetricsNames;
+import com.flipkart.crawl.ingestion.topology.metrics.TopologyMetrics;
 import com.flipkart.crawl.ingestion.topology.util.RetryUtil;
+import com.flipkart.crawl.ingestion.topology.util.ValidationUtil;
 import com.flipkart.pnp.commons.init.StormGuiceContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.storm.task.OutputCollector;
@@ -22,12 +25,19 @@ public class AsyncEnrichmentBolt extends BaseRichBolt {
     private transient OutputCollector collector;
     private transient L2Client l2Client;
     private transient EnrichmentTopologyConfig cfg;
+    private transient TopologyMetrics metrics;
 
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
         this.collector = collector;
         this.l2Client = StormGuiceContext.getInstance(L2Client.class);
         this.cfg = StormGuiceContext.getInstance(EnrichmentTopologyConfig.class);
+        String prefix = context.getThisComponentId();
+        this.metrics = new TopologyMetrics(context, prefix,
+                MetricsNames.ENRICH_SUCCESS,
+                MetricsNames.ENRICH_FAILURE,
+                MetricsNames.ENRICH_RETRY_EMIT,
+                MetricsNames.VALIDATION_REJECT);
     }
 
     @Override
@@ -35,13 +45,25 @@ public class AsyncEnrichmentBolt extends BaseRichBolt {
         String key = input.getStringByField(Constants.KEY);
         String rawJson = input.getStringByField(Constants.RAW_EVENT);
         String jsonForL2 = RetryUtil.extractRawEventJson(rawJson);
+        String validationError = ValidationUtil.validateRawEventJson(jsonForL2);
+        if (validationError != null) {
+            log.warn("Validation failed key={}: {}", key, validationError);
+            metrics.inc(MetricsNames.VALIDATION_REJECT);
+            metrics.inc(MetricsNames.ENRICH_RETRY_EMIT);
+            collector.emit(Constants.RETRY_STREAM, input, new Values(key, rawJson));
+            collector.ack(input);
+            return;
+        }
         try {
             String enrichedJson = l2Client.enrich(jsonForL2, cfg.getL2ClientConfig());
+            metrics.inc(MetricsNames.ENRICH_SUCCESS);
             // Pass inner crawl JSON for central bolt to merge raw + L2 + routing tags.
             collector.emit(input, new Values(key, jsonForL2, enrichedJson));
             collector.ack(input);
         } catch (Exception e) {
             log.error("L2 enrich failed for key={}", key, e);
+            metrics.inc(MetricsNames.ENRICH_FAILURE);
+            metrics.inc(MetricsNames.ENRICH_RETRY_EMIT);
             // Preserve tuple payload (plain raw or envelope) so RetryBolt can bump attempt.
             collector.emit(Constants.RETRY_STREAM, input, new Values(key, rawJson));
             collector.ack(input);
