@@ -84,6 +84,3 @@ src/main/java/com/flipkart/crawl/ingestion/topology/
 - **Producers** (`CentralTopicProducer`, `RetryTopicProducer`, `DlqTopicProducer`) may be stubs until wired to a real Pulsar client.
 - Align **L2** request/response JSON with your service contract if it differs from the current `EnrichIdsRequest` / `ConsolidatedPayloadBuilder` assumptions.
 
-## License
-
-Proprietary / internal unless you add a public license.
