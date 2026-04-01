@@ -4,8 +4,8 @@ Apache Storm topology that ingests crawl events from Pulsar, calls the Layer 2 e
 
 ## Scope
 
-- **In:** raw crawl topic + retry topic (same tuple shape after mapping).
-- **Out:** `central-enriched-events` (via `CentralTopicProducer`), retry topic, DLQ topic.
+- **In:** raw crawl topic + retry topic (same tuple shape after mapping). Preprod names: tenant `ci-preprod`, namespace `ci-crawl-enricher` — see `enrichment-topology.yaml` (e.g. raw `ci-crawl-events-raw-preprod`, retry `ci-crawl-events-retry-preprod`).
+- **Out:** enriched central topic (`ci-enriched-events-preprod` via `CentralTopicProducer`), retry + DLQ topics — same YAML.
 - **Guice:** `GuiceEnableHook` installs `TopologyModule` (config, `L2Client` → `L2HttpClient`, producer singletons).
 - **Metrics:** Bolts register `TopologyMetrics` counters (`MetricsNames`: enrich, validation, central/retry/DLQ publish, DLQ emit).
 - **Validation:** `AsyncEnrichmentBolt` runs `ValidationUtil` on inner crawl JSON before L2; failures go to `RETRY_STREAM` like L2 errors.

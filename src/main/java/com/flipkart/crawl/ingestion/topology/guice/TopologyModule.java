@@ -17,8 +17,6 @@ public class TopologyModule extends AbstractModule {
     protected void configure() {
         bind(EnrichmentTopologyConfig.class).toInstance(cfg);
         bind(L2Client.class).to(L2HttpClient.class).in(Singleton.class);
-        bind(CentralTopicProducer.class).in(Singleton.class);
-        bind(RetryTopicProducer.class).in(Singleton.class);
-        bind(DlqTopicProducer.class).in(Singleton.class);
+        install(new PulsarProducerModule(cfg));
     }
 }

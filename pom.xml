@@ -17,10 +17,12 @@
         <storm.version>2.2.0</storm.version>
         <pnp.storm.commons.version>2.2.0.4.1</pnp.storm.commons.version>
         <jackson.version>2.13.4</jackson.version>
-        <lombok.version>1.18.22</lombok.version>
+        <lombok.version>1.18.38</lombok.version>
         <log4j.version>2.17.1</log4j.version>
         <junit.jupiter.version>5.8.2</junit.jupiter.version>
         <mockito.version>4.11.0</mockito.version>
+        <viesti.commons.version>1.0.5</viesti.commons.version>
+        <metrics.version>3.2.6</metrics.version>
     </properties>
 
     <repositories>
@@ -65,7 +67,29 @@
             <version>${pnp.storm.commons.version}</version>
         </dependency>
 
+        <!-- Viesti Pulsar (same stack as enriched-order-consumer) -->
+        <dependency>
+            <groupId>com.flipkart.pricing.commons</groupId>
+            <artifactId>viesti-commons</artifactId>
+            <version>${viesti.commons.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+            <version>${metrics.version}</version>
+        </dependency>
+
         <!-- JSON -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
@@ -122,6 +146,13 @@
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
 

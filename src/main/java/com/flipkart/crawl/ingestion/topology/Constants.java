@@ -21,4 +21,11 @@ public final class Constants {
 
     /** Stream from RetryBolt to DLQBolt. */
     public static final String DLQ_STREAM = "DLQ_STREAM";
+
+    /** Guice map name for viesti {@code PulsarMessageProducer} instances (enriched-order-consumer pattern). */
+    public static final String PULSAR_PRODUCERS_MAP = "pulsarProducersMap";
+
+    public static final String CENTRAL_PULSAR_PRODUCER = "centralEnrichedPulsarProducer";
+    public static final String RETRY_PULSAR_PRODUCER = "retryPulsarProducer";
+    public static final String DLQ_PULSAR_PRODUCER = "dlqPulsarProducer";
 }

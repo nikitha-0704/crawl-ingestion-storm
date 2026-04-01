@@ -34,6 +34,17 @@ Requires the same dependencies as compile (internal Artifactory). Unit tests cov
 - **Validation:** `AsyncEnrichmentBolt` rejects inner crawl JSON without a valid `product_id` (same path as L2 failure: retry stream → `RetryBolt` / DLQ policy).
 - **Metrics:** Bolts register Storm `CountMetric`s via `TopologyMetrics` (success/failure/retry/DLQ/validation counters per component).
 
+## GCP: fk-3p-storm GCS buckets (storm.yaml / cluster + worker XML)
+
+Instance startup scripts (`scripts/gcp-instance-template-nimbus.sh`, `gcp-instance-template-supervisor.sh`) default to:
+
+| Bucket | Role |
+|--------|------|
+| `ci-storm-nimbus-stage` | `STORM_YAML` + `CLUSTER_XML` |
+| `ci-storm-supervisor-stage` | `WORKER_XML` |
+
+Example project: **upst-explore-9988** — [nimbus bucket](https://console.cloud.google.com/storage/browser/ci-storm-nimbus-stage?project=upst-explore-9988), [supervisor bucket](https://console.cloud.google.com/storage/browser/ci-storm-supervisor-stage?project=upst-explore-9988). Upload Storm config objects per platform; grant VM service accounts read access.
+
 ## Run (submit topology)
 
 Entry point:
@@ -49,7 +60,16 @@ java -cp target/crawl-ingestion-storm-*.jar com.flipkart.crawl.ingestion.topolog
   /path/to/enrichment-topology.yaml CrawlEnrichmentTopology
 ```
 
-Fill `src/main/resources/enrichment-topology.yaml` (or an external file) with real **viesti/Pulsar** settings for your environment.
+Fill `src/main/resources/enrichment-topology.yaml` (or an external file) with real **viesti/Pulsar** settings for your environment. **Preprod** tenant/namespace and producer topic names are already set in that file; complete `pulsarClientConfig` and spout configs per viesti.
+
+### Pulsar topics (preprod — `ci-preprod` / `ci-crawl-enricher`)
+
+| Role | Full topic name |
+|------|-----------------|
+| Raw crawl (spouts) | `persistent://ci-preprod/ci-crawl-enricher/ci-crawl-events-raw-preprod` |
+| Enriched (central producer) | `persistent://ci-preprod/ci-crawl-enricher/ci-enriched-events-preprod` |
+| Retry (spout + producer) | `persistent://ci-preprod/ci-crawl-enricher/ci-crawl-events-retry-preprod` |
+| DLQ | `persistent://ci-preprod/ci-crawl-enricher/ci-crawl-events-dlq` |
 
 ## Topology overview
 

@@ -34,8 +34,11 @@ public class RawEventMapper implements MessageToValuesMapper, Serializable {
         } catch (Exception e) {
             log.warn("Could not parse product_id from payload, falling back to message key / id: {}", e.toString());
         }
-        if (msg.getKey().isPresent()) {
-            return msg.getKey().get();
+        if (msg.hasKey()) {
+            byte[] keyBytes = msg.getKeyBytes();
+            if (keyBytes != null && keyBytes.length > 0) {
+                return new String(keyBytes, StandardCharsets.UTF_8);
+            }
         }
         return String.valueOf(msg.getMessageId());
     }
