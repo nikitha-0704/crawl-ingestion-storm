@@ -13,7 +13,7 @@ public class PulsarConfig implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /** Full topic: persistent://tenant/ns/central-enriched-events */
+    /** Full topic, e.g. persistent://ci-preprod/ci-crawl-enricher/ci-enriched-events-preprod */
     private String centralEnrichedTopic;
 
     /** Full topic for L1 retry loop */

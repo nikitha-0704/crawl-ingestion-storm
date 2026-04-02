@@ -1,14 +1,33 @@
+# =============================================================================
+# Layer-1 crawl enrichment — Viesti / Pulsar (stage / ci-preprod)
+#
+# Topics (Podium): tenant ci-preprod, namespace ci-crawl-enricher
+# Authn client id (service account): ci-preprod — set on pulsarClientConfig.clientId
+#
+# Subscriptions / consumers (as created in Podium for stage):
+#   Raw:     ci-crawl-events-raw-test-consumer      -> raw spout below
+#   Retry:   ci-crawl-events-retry-test-consumer      -> retry spout below
+#   Central: ci-enriched-events-test-consumer         -> Layer 3 only (not L1 spout)
+#   DLQ:     ci-crawl-events-dlq-test-consumer        -> DLQ readers / monitoring
+#
+# Secrets (clientSecret, endpoints) must be supplied for real runs — use Vault /
+# confd / env-specific overlays. Do not commit production credentials.
+# =============================================================================
+
 name: CrawlEnrichmentTopology
 workers: 1
 ackers: 1
 debug: false
 topologyTimeoutInSecs: 240
 maxSpoutPending: 3000
+topologyStatsSampleRate: 1.0
+additionalStormProperties: null
 
+# Producer topics (CentralTopicProducer, RetryTopicProducer, DlqTopicProducer)
 pulsarTopics:
-  centralEnrichedTopic: "persistent://tenant/ns/central-enriched-events"
-  retryTopic: "persistent://tenant/ns/crawl-retry"
-  dlqTopic: "persistent://tenant/ns/crawl-dlq"
+  centralEnrichedTopic: "persistent://ci-preprod/ci-crawl-enricher/ci-enriched-events-preprod"
+  retryTopic: "persistent://ci-preprod/ci-crawl-enricher/ci-crawl-events-retry-preprod"
+  dlqTopic: "persistent://ci-preprod/ci-crawl-enricher/ci-crawl-events-dlq"
 
 retryConfig:
   maxAttempts: 3
@@ -21,11 +40,59 @@ l2ClientConfig:
   readTimeoutMs: 10000
   maxBatchSize: 30
 
-# viesti blocks — copy/adapt from enriched-order-consumer YAML for your cluster
-pulsarClientConfig: {}
-rawPulsarSpoutConfig: {}
-retryPulsarSpoutConfig: {}
-pulsarDlqConfig: {}
+# --- Viesti OAuth client (stage: Authn client / service account ci-preprod) ---
+pulsarClientConfig:
+  remoteEndpoint: "http://REPLACE_WITH_PULSAR_HTTP_SERVICE:80"
+  statIntervalSeconds: 60
+  clientId: "ci-preprod"
+  clientSecret: "REPLACE_WITH_OAUTH_CLIENT_SECRET"
+  issuerUrl: "https://REPLACE_WITH_AUTH_ISSUER/v3/fk"
+  audience: "REPLACE_WITH_VIESTI_AUDIENCE"
+
+# Shared producer props for all three PulsarMessageProducer instances (bootstrap + serializers + OAuth class).
+# Auth string is merged from pulsarClientConfig in PulsarValidations (enriched-order pattern).
+pulsarProducerProps:
+  bootstrap.servers: "http://REPLACE_WITH_PULSAR_HTTP_SERVICE:80"
+  key.serializer: "org.apache.kafka.common.serialization.StringSerializer"
+  value.serializer: "org.apache.kafka.common.serialization.ByteArraySerializer"
+  pulsar.block.if.producer.queue.full: true
+  linger.ms: 10
+  delivery.timeout.ms: 60000
+  pulsar.authentication.class: "org.apache.pulsar.client.impl.auth.oauth2.AuthenticationOAuth2"
+
+# Raw ingress (subscription = ci-crawl-events-raw-test-consumer).
+rawPulsarSpoutConfig:
+  name: "rawCrawlPulsarSpout"
+  parallelismHint: 1
+  pulsarSpoutConfig:
+    subscriptionName: "ci-crawl-events-raw-test-consumer"
+    serviceUrl: "http://REPLACE_WITH_PULSAR_HTTP_SERVICE:80"
+    topic: "persistent://ci-preprod/ci-crawl-enricher/ci-crawl-events-raw-preprod"
+  consumerConfig:
+    subscriptionType: "Shared"
+    subscriptionInitialPosition: "Earliest"
+    topicNames:
+      - "persistent://ci-preprod/ci-crawl-enricher/ci-crawl-events-raw-preprod"
+
+# Retry loop (subscription = ci-crawl-events-retry-test-consumer).
+retryPulsarSpoutConfig:
+  name: "retryCrawlPulsarSpout"
+  parallelismHint: 1
+  pulsarSpoutConfig:
+    subscriptionName: "ci-crawl-events-retry-test-consumer"
+    serviceUrl: "http://REPLACE_WITH_PULSAR_HTTP_SERVICE:80"
+    topic: "persistent://ci-preprod/ci-crawl-enricher/ci-crawl-events-retry-preprod"
+  consumerConfig:
+    subscriptionType: "Shared"
+    subscriptionInitialPosition: "Earliest"
+    topicNames:
+      - "persistent://ci-preprod/ci-crawl-enricher/ci-crawl-events-retry-preprod"
+
+# Spillover / dead-letter policy for viesti spouts (topic + max redeliveries before DLQ).
+# Align maxRedeliverCount with operational expectations; retryConfig.maxAttempts is application-level.
+pulsarDlqConfig:
+  topic: "persistent://ci-preprod/ci-crawl-enricher/ci-crawl-events-dlq"
+  maxRedeliverCount: 3
 
 asyncEnrichmentBoltConfig:
   name: asyncEnrichmentBolt

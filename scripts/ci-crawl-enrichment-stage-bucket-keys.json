@@ -1,0 +1,67 @@
+{
+  "name": "CrawlEnrichmentTopology",
+  "workers": 1,
+  "ackers": 1,
+  "debug": false,
+  "topologyTimeoutInSecs": 240,
+  "maxSpoutPending": 3000,
+  "topologyStatsSampleRate": 1.0,
+  "additionalStormProperties": null,
+
+  "pulsarTopics.centralEnrichedTopic": "persistent://ci-preprod/ci-crawl-enricher/ci-enriched-events-preprod",
+  "pulsarTopics.retryTopic": "persistent://ci-preprod/ci-crawl-enricher/ci-crawl-events-retry-preprod",
+  "pulsarTopics.dlqTopic": "persistent://ci-preprod/ci-crawl-enricher/ci-crawl-events-dlq",
+
+  "retryConfig.maxAttempts": 3,
+
+  "l2ClientConfig.baseUrl": "http://localhost:8080",
+  "l2ClientConfig.enrichPath": "/enrich",
+  "l2ClientConfig.connectTimeoutMs": 2000,
+  "l2ClientConfig.readTimeoutMs": 10000,
+  "l2ClientConfig.maxBatchSize": 30,
+
+  "pulsarClientConfig.remoteEndpoint": "http://REPLACE_WITH_PULSAR_HTTP_SERVICE:80",
+  "pulsarClientConfig.statIntervalSeconds": 60,
+  "pulsarClientConfig.clientId": "ci-preprod",
+  "pulsarClientConfig.clientSecret": "REPLACE_WITH_OAUTH_CLIENT_SECRET_OR_USE_ENCRYPTED_KEY",
+  "pulsarClientConfig.issuerUrl": "https://REPLACE_WITH_AUTH_ISSUER/v3/fk",
+  "pulsarClientConfig.audience": "REPLACE_WITH_VIESTI_AUDIENCE",
+
+  "pulsarProducerProps.bootstrap.servers": "http://REPLACE_WITH_PULSAR_HTTP_SERVICE:80",
+  "pulsarProducerProps.key.serializer": "org.apache.kafka.common.serialization.StringSerializer",
+  "pulsarProducerProps.value.serializer": "org.apache.kafka.common.serialization.ByteArraySerializer",
+  "pulsarProducerProps.pulsar.block.if.producer.queue.full": true,
+  "pulsarProducerProps.linger.ms": 10,
+  "pulsarProducerProps.delivery.timeout.ms": 60000,
+  "pulsarProducerProps.pulsar.authentication.class": "org.apache.pulsar.client.impl.auth.oauth2.AuthenticationOAuth2",
+
+  "rawPulsarSpoutConfig.name": "rawCrawlPulsarSpout",
+  "rawPulsarSpoutConfig.parallelismHint": 1,
+  "rawPulsarSpoutConfig.pulsarSpoutConfig.subscriptionName": "ci-crawl-events-raw-test-consumer",
+  "rawPulsarSpoutConfig.pulsarSpoutConfig.serviceUrl": "http://REPLACE_WITH_PULSAR_HTTP_SERVICE:80",
+  "rawPulsarSpoutConfig.pulsarSpoutConfig.topic": "persistent://ci-preprod/ci-crawl-enricher/ci-crawl-events-raw-preprod",
+  "rawPulsarSpoutConfig.consumerConfig.subscriptionType": "Shared",
+  "rawPulsarSpoutConfig.consumerConfig.subscriptionInitialPosition": "Earliest",
+  "rawPulsarSpoutConfig.consumerConfig.topicNames": ["persistent://ci-preprod/ci-crawl-enricher/ci-crawl-events-raw-preprod"],
+
+  "retryPulsarSpoutConfig.name": "retryCrawlPulsarSpout",
+  "retryPulsarSpoutConfig.parallelismHint": 1,
+  "retryPulsarSpoutConfig.pulsarSpoutConfig.subscriptionName": "ci-crawl-events-retry-test-consumer",
+  "retryPulsarSpoutConfig.pulsarSpoutConfig.serviceUrl": "http://REPLACE_WITH_PULSAR_HTTP_SERVICE:80",
+  "retryPulsarSpoutConfig.pulsarSpoutConfig.topic": "persistent://ci-preprod/ci-crawl-enricher/ci-crawl-events-retry-preprod",
+  "retryPulsarSpoutConfig.consumerConfig.subscriptionType": "Shared",
+  "retryPulsarSpoutConfig.consumerConfig.subscriptionInitialPosition": "Earliest",
+  "retryPulsarSpoutConfig.consumerConfig.topicNames": ["persistent://ci-preprod/ci-crawl-enricher/ci-crawl-events-retry-preprod"],
+
+  "pulsarDlqConfig.topic": "persistent://ci-preprod/ci-crawl-enricher/ci-crawl-events-dlq",
+  "pulsarDlqConfig.maxRedeliverCount": 3,
+
+  "asyncEnrichmentBoltConfig.name": "asyncEnrichmentBolt",
+  "asyncEnrichmentBoltConfig.parallelismHint": 2,
+  "centralPublisherBoltConfig.name": "centralPublisherBolt",
+  "centralPublisherBoltConfig.parallelismHint": 2,
+  "retryBoltConfig.name": "retryBolt",
+  "retryBoltConfig.parallelismHint": 1,
+  "dlqBoltConfig.name": "dlqBolt",
+  "dlqBoltConfig.parallelismHint": 1
+}
