@@ -1,0 +1,66 @@
+#!/bin/bash
+
+function die() {
+    echo "ERROR: $*" >&2
+    exit 2
+}
+
+function usage() {
+    [ -n "$1" ] && echo "Error: $*" >&2
+    echo "Usage: $0 <command>" >&2
+    echo "     commands: help, run-class, run-alias, start-all" >&2
+    [ -n "$1" ] && exit 1
+    exit 0
+}
+
+function log() {
+    echo "[$(date)] ($curuser) $0 $@" >>$ADMIN_LOG_FILE
+}
+
+function run_class() {
+    log storm jar /usr/share/$PAC/lib/*.jar "$@"
+    storm jar /usr/share/$PAC/lib/*.jar "$@"
+}
+
+function run_alias() {
+    class_var=$(echo "TOPOLOGY_${@}" | tr '[:lower:]' '[:upper:]')
+    class_path=$(echo ${!class_var})
+    if [ "x$class_path" != "x" ];
+    then
+        echo "Executing "
+        run_class $class_path
+    else
+        echo "USAGE: run-alias <Only following commands can be used along with run-alias>"
+        for topology in $DEFAULT_TOPOLOGIES; do
+            echo -en "run-alias ";
+            echo $topology | cut -f1- -d'_' | tr '[:upper:]' '[:lower:]';
+        done
+    fi
+}
+
+PAC=_PACKAGE_
+curuser=$(whoami)
+source /etc/default/$PAC
+
+log "$@"
+
+CMD="$1"
+shift
+case "$CMD" in
+    help) usage;;
+    run-class)
+        if [ "$#" -gt 0 ]; then
+            run_class "$@"
+        else
+            echo "USAGE: run-class <class-to-run> [<args>]"
+        fi
+        ;;
+    run-alias)
+        run_alias "$@"
+        ;;
+    start-all)
+        for topology in $DEFAULT_TOPOLOGIES; do
+            run_class ${!topology}
+        done
+        ;;
+esac

@@ -1,0 +1,8 @@
+Package: _PACKAGE_
+Version: 1._VERSION_
+Section: flipkart/pnp
+Priority: standard
+Depends: fk-config-service-confd, oracle-j2sdk1.8
+Architecture: all
+Maintainer: Crawl Ingestion <crawl-ingestion@flipkart.com>
+Description: Crawl Layer-1 enrichment Storm topology (CrawlEnrichmentTopology, Pulsar / L2)

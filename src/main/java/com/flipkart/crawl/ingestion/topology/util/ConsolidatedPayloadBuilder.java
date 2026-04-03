@@ -3,6 +3,7 @@ package com.flipkart.crawl.ingestion.topology.util;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.flipkart.crawl.ingestion.topology.model.EnrichedEvent;
 import com.flipkart.crawl.ingestion.topology.model.RawEvent;
+import com.flipkart.crawl.ingestion.topology.routing.PipelineRoutingRegistry;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -17,10 +18,15 @@ public final class ConsolidatedPayloadBuilder {
     private ConsolidatedPayloadBuilder() {}
 
     public static String build(String crawlRawJson, String l2ResponseJson) throws Exception {
+        return build(crawlRawJson, l2ResponseJson, PipelineRoutingRegistry.NOOP);
+    }
+
+    public static String build(String crawlRawJson, String l2ResponseJson, PipelineRoutingRegistry pipelineRegistry)
+            throws Exception {
         RawEvent raw = RawEventParser.parseLenient(crawlRawJson);
         EnrichedEvent out = new EnrichedEvent();
         out.setRaw(raw);
-        out.setRouting_tags(RoutingTagsBuilder.fromCrawlJson(crawlRawJson));
+        out.setRouting_tags(RoutingTagsBuilder.fromCrawlJson(crawlRawJson, pipelineRegistry));
 
         JsonNode root = JsonUtil.MAPPER.readTree(l2ResponseJson);
         if (root == null || root.isNull()) {

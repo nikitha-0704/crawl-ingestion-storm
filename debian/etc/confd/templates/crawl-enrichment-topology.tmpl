@@ -1,0 +1,97 @@
+---
+name: {{getv "/name"}}
+workers: {{getv "/workers"}}
+ackers: {{getv "/ackers"}}
+debug: {{getv "/debug"}}
+topologyTimeoutInSecs: {{getv "/topologyTimeoutInSecs"}}
+maxSpoutPending: {{getv "/maxSpoutPending"}}
+topologyStatsSampleRate: {{getv "/topologyStatsSampleRate"}}
+additionalStormProperties: null
+
+pulsarTopics:
+  centralEnrichedTopic: {{getv "/pulsarTopics.centralEnrichedTopic"}}
+  retryTopic: {{getv "/pulsarTopics.retryTopic"}}
+  dlqTopic: {{getv "/pulsarTopics.dlqTopic"}}
+
+retryConfig:
+  maxAttempts: {{getv "/retryConfig.maxAttempts"}}
+
+l2ClientConfig:
+  baseUrl: {{getv "/l2ClientConfig.baseUrl"}}
+  enrichPath: {{getv "/l2ClientConfig.enrichPath"}}
+  connectTimeoutMs: {{getv "/l2ClientConfig.connectTimeoutMs"}}
+  readTimeoutMs: {{getv "/l2ClientConfig.readTimeoutMs"}}
+  maxBatchSize: {{getv "/l2ClientConfig.maxBatchSize"}}
+  microBatchWindowCount: {{getv "/l2ClientConfig.microBatchWindowCount"}}
+  microBatchWindowSeconds: {{getv "/l2ClientConfig.microBatchWindowSeconds"}}
+
+pipelineRouting:
+  enabled: {{getv "/pipelineRouting.enabled"}}
+  jdbcUrl: {{getv "/pipelineRouting.jdbcUrl"}}
+  jdbcUser: {{getv "/pipelineRouting.jdbcUser"}}
+  jdbcPassword: {{getv "/pipelineRouting.jdbcPassword"}}
+  refreshIntervalMinutes: {{getv "/pipelineRouting.refreshIntervalMinutes"}}
+  sql: "{{getv "/pipelineRouting.sql"}}"
+
+pulsarClientConfig:
+  remoteEndpoint: {{getv "/pulsarClientConfig.remoteEndpoint"}}
+  statIntervalSeconds: {{getv "/pulsarClientConfig.statIntervalSeconds"}}
+  clientId: {{getv "/pulsarClientConfig.clientId"}}
+  clientSecret: {{getv "/pulsarClientConfig.clientSecret"}}
+  issuerUrl: {{getv "/pulsarClientConfig.issuerUrl"}}
+  audience: {{getv "/pulsarClientConfig.audience"}}
+
+pulsarProducerProps:
+  bootstrap.servers: {{getv "/pulsarProducerProps.bootstrap.servers"}}
+  key.serializer: {{getv "/pulsarProducerProps.key.serializer"}}
+  value.serializer: {{getv "/pulsarProducerProps.value.serializer"}}
+  pulsar.block.if.producer.queue.full: {{getv "/pulsarProducerProps.pulsar.block.if.producer.queue.full"}}
+  linger.ms: {{getv "/pulsarProducerProps.linger.ms"}}
+  delivery.timeout.ms: {{getv "/pulsarProducerProps.delivery.timeout.ms"}}
+  pulsar.authentication.class: {{getv "/pulsarProducerProps.pulsar.authentication.class"}}
+
+rawPulsarSpoutConfig:
+  name: {{getv "/rawPulsarSpoutConfig.name"}}
+  parallelismHint: {{getv "/rawPulsarSpoutConfig.parallelismHint"}}
+  pulsarSpoutConfig:
+    subscriptionName: {{getv "/rawPulsarSpoutConfig.pulsarSpoutConfig.subscriptionName"}}
+    serviceUrl: {{getv "/rawPulsarSpoutConfig.pulsarSpoutConfig.serviceUrl"}}
+    topic: {{getv "/rawPulsarSpoutConfig.pulsarSpoutConfig.topic"}}
+  consumerConfig:
+    subscriptionType: {{getv "/rawPulsarSpoutConfig.consumerConfig.subscriptionType"}}
+    subscriptionInitialPosition: {{getv "/rawPulsarSpoutConfig.consumerConfig.subscriptionInitialPosition"}}
+    topicNames:
+      - {{getv "/rawPulsarSpoutConfig.consumerConfig.topicNames0"}}
+
+retryPulsarSpoutConfig:
+  name: {{getv "/retryPulsarSpoutConfig.name"}}
+  parallelismHint: {{getv "/retryPulsarSpoutConfig.parallelismHint"}}
+  pulsarSpoutConfig:
+    subscriptionName: {{getv "/retryPulsarSpoutConfig.pulsarSpoutConfig.subscriptionName"}}
+    serviceUrl: {{getv "/retryPulsarSpoutConfig.pulsarSpoutConfig.serviceUrl"}}
+    topic: {{getv "/retryPulsarSpoutConfig.pulsarSpoutConfig.topic"}}
+  consumerConfig:
+    subscriptionType: {{getv "/retryPulsarSpoutConfig.consumerConfig.subscriptionType"}}
+    subscriptionInitialPosition: {{getv "/retryPulsarSpoutConfig.consumerConfig.subscriptionInitialPosition"}}
+    topicNames:
+      - {{getv "/retryPulsarSpoutConfig.consumerConfig.topicNames0"}}
+
+pulsarDlqConfig:
+  topic: {{getv "/pulsarDlqConfig.topic"}}
+  maxRedeliverCount: {{getv "/pulsarDlqConfig.maxRedeliverCount"}}
+
+asyncEnrichmentBoltConfig:
+  name: {{getv "/asyncEnrichmentBoltConfig.name"}}
+  parallelismHint: {{getv "/asyncEnrichmentBoltConfig.parallelismHint"}}
+
+centralPublisherBoltConfig:
+  name: {{getv "/centralPublisherBoltConfig.name"}}
+  parallelismHint: {{getv "/centralPublisherBoltConfig.parallelismHint"}}
+
+retryBoltConfig:
+  name: {{getv "/retryBoltConfig.name"}}
+  parallelismHint: {{getv "/retryBoltConfig.parallelismHint"}}
+
+dlqBoltConfig:
+  name: {{getv "/dlqBoltConfig.name"}}
+  parallelismHint: {{getv "/dlqBoltConfig.parallelismHint"}}

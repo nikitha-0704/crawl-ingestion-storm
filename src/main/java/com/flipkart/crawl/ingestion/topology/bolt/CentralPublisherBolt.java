@@ -5,6 +5,7 @@ import com.flipkart.crawl.ingestion.topology.client.CentralTopicProducer;
 import com.flipkart.crawl.ingestion.topology.config.EnrichmentTopologyConfig;
 import com.flipkart.crawl.ingestion.topology.metrics.MetricsNames;
 import com.flipkart.crawl.ingestion.topology.metrics.TopologyMetrics;
+import com.flipkart.crawl.ingestion.topology.routing.PipelineRoutingRegistry;
 import com.flipkart.crawl.ingestion.topology.util.ConsolidatedPayloadBuilder;
 import com.flipkart.pnp.commons.init.StormGuiceContext;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ public class CentralPublisherBolt extends BaseRichBolt {
     private transient OutputCollector collector;
     private transient CentralTopicProducer producer;
     private transient EnrichmentTopologyConfig cfg;
+    private transient PipelineRoutingRegistry pipelineRoutingRegistry;
     private transient TopologyMetrics metrics;
 
     @Override
@@ -29,6 +31,7 @@ public class CentralPublisherBolt extends BaseRichBolt {
         this.collector = collector;
         this.producer = StormGuiceContext.getInstance(CentralTopicProducer.class);
         this.cfg = StormGuiceContext.getInstance(EnrichmentTopologyConfig.class);
+        this.pipelineRoutingRegistry = StormGuiceContext.getInstance(PipelineRoutingRegistry.class);
         this.metrics = new TopologyMetrics(context, context.getThisComponentId(),
                 MetricsNames.CENTRAL_PUBLISH_SUCCESS,
                 MetricsNames.CENTRAL_PUBLISH_FAILURE);
@@ -40,7 +43,7 @@ public class CentralPublisherBolt extends BaseRichBolt {
         String crawlRawJson = input.getStringByField(Constants.RAW_EVENT);
         String l2ResponseJson = input.getStringByField(Constants.ENRICHED_EVENT);
         try {
-            String consolidated = ConsolidatedPayloadBuilder.build(crawlRawJson, l2ResponseJson);
+            String consolidated = ConsolidatedPayloadBuilder.build(crawlRawJson, l2ResponseJson, pipelineRoutingRegistry);
             producer.publish(cfg, key, consolidated);
             metrics.inc(MetricsNames.CENTRAL_PUBLISH_SUCCESS);
             collector.ack(input);

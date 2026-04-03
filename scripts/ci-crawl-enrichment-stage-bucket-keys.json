@@ -19,6 +19,15 @@
   "l2ClientConfig.connectTimeoutMs": 2000,
   "l2ClientConfig.readTimeoutMs": 10000,
   "l2ClientConfig.maxBatchSize": 30,
+  "l2ClientConfig.microBatchWindowCount": 30,
+  "l2ClientConfig.microBatchWindowSeconds": 30,
+
+  "pipelineRouting.enabled": false,
+  "pipelineRouting.jdbcUrl": "",
+  "pipelineRouting.jdbcUser": "",
+  "pipelineRouting.jdbcPassword": "",
+  "pipelineRouting.refreshIntervalMinutes": 60,
+  "pipelineRouting.sql": "SELECT site_id, competitor_id, pipeline_name FROM crawl_site_competitor_pipeline",
 
   "pulsarClientConfig.remoteEndpoint": "http://REPLACE_WITH_PULSAR_HTTP_SERVICE:80",
   "pulsarClientConfig.statIntervalSeconds": 60,

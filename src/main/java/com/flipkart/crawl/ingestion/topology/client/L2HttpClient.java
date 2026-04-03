@@ -11,15 +11,19 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 
 public class L2HttpClient implements L2Client {
 
     @Override
-    public String enrich(String rawEventJson, L2ClientConfig cfg) throws Exception {
-        IdRef ids = IdRef.fromCrawlJson(rawEventJson);
+    public String enrichBatch(List<String> rawEventJsons, L2ClientConfig cfg) throws Exception {
+        List<IdRef> refs = new ArrayList<>(rawEventJsons.size());
+        for (String json : rawEventJsons) {
+            refs.add(IdRef.fromCrawlJson(json));
+        }
         EnrichIdsRequest req = new EnrichIdsRequest();
-        req.setEvents(Collections.singletonList(ids));
+        req.setEvents(refs);
 
         String url = cfg.getBaseUrl() + cfg.getEnrichPath();
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();

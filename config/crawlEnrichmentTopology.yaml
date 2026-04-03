@@ -39,9 +39,11 @@ l2ClientConfig:
   connectTimeoutMs: 2000
   readTimeoutMs: 10000
   maxBatchSize: 30
+  # Storm tumbling window: count (default 30). Set microBatchWindowCount: 0 to use time window only.
   microBatchWindowCount: 30
   microBatchWindowSeconds: 30
 
+# Classifier: (site_id, competitor_id) → pipeline names (MySQL refresh). Omit or enabled: false for no DB.
 pipelineRouting:
   enabled: false
   jdbcUrl: ""

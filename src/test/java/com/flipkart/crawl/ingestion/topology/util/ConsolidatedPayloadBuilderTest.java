@@ -1,7 +1,10 @@
 package com.flipkart.crawl.ingestion.topology.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.flipkart.crawl.ingestion.topology.routing.PipelineRoutingRegistry;
 import org.junit.jupiter.api.Test;
+
+import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -35,5 +38,15 @@ class ConsolidatedPayloadBuilderTest {
         String out = ConsolidatedPayloadBuilder.build(CRAWL, l2);
         JsonNode root = JsonUtil.MAPPER.readTree(out);
         assertTrue(root.get("fk_data").get("l2_body").has("foo"));
+    }
+
+    @Test
+    void build_includesPipelinesFromRegistry() throws Exception {
+        String l2 = "{\"match_status\":\"MATCHED\",\"fk_data\":{}}";
+        PipelineRoutingRegistry reg = (s, c) ->
+                s != null && s == 2 && c != null && c == 3 ? Collections.singletonList("CI") : Collections.emptyList();
+        String out = ConsolidatedPayloadBuilder.build(CRAWL, l2, reg);
+        JsonNode root = JsonUtil.MAPPER.readTree(out);
+        assertEquals("CI", root.get("routing_tags").get("pipelines").get(0).asText());
     }
 }

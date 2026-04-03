@@ -1,0 +1,13 @@
+PACKAGE=_PACKAGE_
+
+USER=crawl-ingestion
+GROUP=crawl-ingestion
+
+MY_UID=$(id crawl-ingestion -u)
+MY_GID=$(id crawl-ingestion -g)
+
+LOG_DIR=/var/log/flipkart/pnp/$PACKAGE
+ADMIN_LOG_FILE=/var/log/flipkart/pnp/$PACKAGE/admin-cmd.log
+
+TOPOLOGY_CRAWLENRICHMENTTOPOLOGY="com.flipkart.crawl.ingestion.topology.TopologyBooter /etc/fk-3p-storm/conf/crawl-enrichment-topology.yaml CrawlEnrichmentTopology"
+DEFAULT_TOPOLOGIES="TOPOLOGY_CRAWLENRICHMENTTOPOLOGY"

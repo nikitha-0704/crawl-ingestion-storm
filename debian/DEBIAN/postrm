@@ -1,0 +1,15 @@
+#! /bin/bash -e
+
+CMD="$1"
+echo "POST RM - $CMD"
+PAC=_PACKAGE_
+
+rm -rf /var/run/$PAC.pid
+if [ "$CMD" == "purge" ]; then
+	if [ -d "/usr/share/$PAC" ]; then
+		rm -rf /usr/share/$PAC
+	fi
+	if [ -d "/var/log/$PAC" ]; then
+		rm -rf /var/log/$PAC
+	fi
+fi

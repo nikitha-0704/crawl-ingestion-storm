@@ -1,9 +1,11 @@
 package com.flipkart.crawl.ingestion.topology.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.flipkart.crawl.ingestion.topology.routing.PipelineRoutingRegistry;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -13,10 +15,18 @@ public final class RoutingTagsBuilder {
 
     private RoutingTagsBuilder() {}
 
-    /** Derive tags from crawl JSON (same keys as crawl event). */
+    /** Derive tags from crawl JSON (same keys as crawl event). No DB-backed pipelines. */
     public static Map<String, Object> fromCrawlJson(String crawlRawJson) throws IOException {
+        return fromCrawlJson(crawlRawJson, PipelineRoutingRegistry.NOOP);
+    }
+
+    /**
+     * Adds {@code pipelines} from in-memory (site_id, competitor_id) classifier when the registry has a mapping.
+     */
+    public static Map<String, Object> fromCrawlJson(String crawlRawJson, PipelineRoutingRegistry registry) throws IOException {
         Map<String, Object> tags = new LinkedHashMap<>();
         tags.put("source", "CRAWL");
+        PipelineRoutingRegistry reg = registry != null ? registry : PipelineRoutingRegistry.NOOP;
         if (crawlRawJson == null || crawlRawJson.isEmpty()) {
             return tags;
         }
@@ -29,7 +39,20 @@ public final class RoutingTagsBuilder {
         putNumber(tags, "product_id", n, "product_id");
         putText(tags, "sku", n, "sku");
         putText(tags, "category", n, "category");
+        Integer siteId = intOrNull(n, "site_id");
+        Integer compId = intOrNull(n, "competitor_id");
+        List<String> pipelines = reg.pipelinesFor(siteId, compId);
+        if (!pipelines.isEmpty()) {
+            tags.put("pipelines", pipelines);
+        }
         return tags;
+    }
+
+    private static Integer intOrNull(JsonNode root, String field) {
+        if (root == null || !root.hasNonNull(field) || !root.get(field).isNumber()) {
+            return null;
+        }
+        return root.get(field).intValue();
     }
 
     private static void putNumber(Map<String, Object> tags, String outKey, JsonNode root, String field) {

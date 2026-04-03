@@ -1,0 +1,50 @@
+#!/bin/bash -ex
+
+HOST_ENV="_HOST_ENV_"
+function updateBucketsInTomls() {
+    source /etc/environment
+
+    if [ "$HOST_ENV" == "" ]; then
+      HOST_ENV=prod
+    fi
+
+	  echo -e "\033[32m CRAWL INGESTION STORM — crawl-enrichment-topology ENV = $HOST_ENV  \033[0m"
+
+    cd /etc/confd/conf.d
+    for tmplFile in $(ls crawl-enrichment-topology.toml 2>/dev/null); do
+          sed -i -e "s/_ENV_TYPE_/$HOST_ENV/g" $tmplFile
+    done
+}
+
+PAC=_PACKAGE_
+getent group crawl-ingestion || groupadd crawl-ingestion
+id -u crawl-ingestion &>/dev/null || useradd crawl-ingestion -g crawl-ingestion
+USER=crawl-ingestion
+GROUP=crawl-ingestion
+CMD="$1"
+COMMAND="/usr/share/$PAC/bin/$PAC"
+
+[ -f /etc/default/$PAC ] && . /etc/default/$PAC
+
+if [ "$CMD" == "configure" ]; then
+    mkdir -p $LOG_DIR
+
+    chown -Rf $USER:$GROUP /usr/share/$PAC /etc/default/$PAC || true
+
+    ln -sf /usr/share/$PAC/bin/$PAC /usr/bin/$PAC
+    chmod a+x /usr/bin/$PAC
+
+    ADMIN_LOG_FILE=$LOG_DIR/admin-cmd.log
+    [ ! -f "$ADMIN_LOG_FILE" ] && touch $ADMIN_LOG_FILE
+    chgrp  $GROUP $ADMIN_LOG_FILE
+    chmod 777 $ADMIN_LOG_FILE
+
+    updateBucketsInTomls
+
+    echo "Restarting Confd"
+    sudo /etc/init.d/fk-config-service-confd restart || true
+    sleep 5
+
+    echo "No topologies have been submitted. Use $COMMAND to do so."
+fi
+

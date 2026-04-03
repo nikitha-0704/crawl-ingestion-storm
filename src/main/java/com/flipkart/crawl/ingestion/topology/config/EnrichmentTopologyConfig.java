@@ -52,6 +52,9 @@ public class EnrichmentTopologyConfig extends TopologyConfig implements Serializ
     private final PulsarConfig pulsarTopics;
     private final TopologyRuntimeConfig runtime;
 
+    /** Optional classifier config; when null or disabled, routing uses no pipeline list from DB. */
+    private final PipelineRoutingConfig pipelineRouting;
+
     protected EnrichmentTopologyConfig(
             @JsonProperty("name") String name,
             @JsonProperty("workers") Integer workers,
@@ -73,7 +76,8 @@ public class EnrichmentTopologyConfig extends TopologyConfig implements Serializ
             @JsonProperty("retryBoltConfig") BaseStormUnitConfig retryBoltConfig,
             @JsonProperty("dlqBoltConfig") BaseStormUnitConfig dlqBoltConfig,
             @JsonProperty("pulsarTopics") PulsarConfig pulsarTopics,
-            @JsonProperty("runtime") TopologyRuntimeConfig runtime) {
+            @JsonProperty("runtime") TopologyRuntimeConfig runtime,
+            @JsonProperty("pipelineRouting") PipelineRoutingConfig pipelineRouting) {
         super(name, workers, ackers, debug, maxSpoutPending, topologyTimeoutInSecs, topologyStatsSampleRate,
                 additionalStormProperties);
         this.pulsarClientConfig = pulsarClientConfig;
@@ -89,5 +93,6 @@ public class EnrichmentTopologyConfig extends TopologyConfig implements Serializ
         this.dlqBoltConfig = dlqBoltConfig;
         this.pulsarTopics = pulsarTopics;
         this.runtime = runtime;
+        this.pipelineRouting = pipelineRouting;
     }
 }

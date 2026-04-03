@@ -27,11 +27,13 @@ mvn clean compile -DskipTests
 mvn test
 ```
 
-Requires the same dependencies as compile (internal Artifactory). Unit tests cover `RetryUtil`, `ValidationUtil`, and `ConsolidatedPayloadBuilder` (no Storm cluster).
+Requires the same dependencies as compile (internal Artifactory). Unit tests cover `RetryUtil`, `ValidationUtil`, `RoutingTagsBuilder`, and `ConsolidatedPayloadBuilder` (no Storm cluster).
 
 ## Runtime behavior
 
-- **Validation:** `AsyncEnrichmentBolt` rejects inner crawl JSON without a valid `product_id` (same path as L2 failure: retry stream → `RetryBolt` / DLQ policy).
+- **Micro-batching (L2):** `AsyncEnrichmentBolt` extends Storm’s `BaseWindowedBolt` with a tumbling window (default **count 30** via `l2ClientConfig.microBatchWindowCount`, or set to `0` and use `microBatchWindowSeconds` for a time window). Within each window it calls `L2Client.enrichBatch` with up to `maxBatchSize` identifiers per HTTP request and fans out per-tuple emits using the returned `enriched_events` order.
+- **Classifier:** Optional `pipelineRouting` loads `(site_id, competitor_id) → pipeline names` from MySQL on a schedule; `RoutingTagsBuilder` adds a `pipelines` array on the consolidated payload when a mapping exists (`enabled: false` keeps prior behaviour).
+- **Validation:** Rejects inner crawl JSON without a valid `product_id` (same path as L2 failure: retry stream → `RetryBolt` / DLQ policy).
 - **Metrics:** Bolts register Storm `CountMetric`s via `TopologyMetrics` (success/failure/retry/DLQ/validation counters per component).
 
 ## GCP: fk-3p-storm GCS buckets (storm.yaml / cluster + worker XML)
@@ -44,6 +46,21 @@ Instance startup scripts (`scripts/gcp-instance-template-nimbus.sh`, `gcp-instan
 | `ci-storm-supervisor-stage` | `WORKER_XML` |
 
 Example project: **upst-explore-9988** — [nimbus bucket](https://console.cloud.google.com/storage/browser/ci-storm-nimbus-stage?project=upst-explore-9988), [supervisor bucket](https://console.cloud.google.com/storage/browser/ci-storm-supervisor-stage?project=upst-explore-9988). Upload Storm config objects per platform; grant VM service accounts read access.
+
+## Debian package & confd (same idea as `pricing-commons/batching-topology`)
+
+| Path | Purpose |
+|------|---------|
+| `debian/` | `control`, `postinst`, confd `crawl-enrichment-topology.toml` + `.tmpl` → `/etc/fk-3p-storm/conf/crawl-enrichment-topology.yaml` |
+| `config/crawlEnrichmentTopology.yaml` | Sample topology YAML (mirror of `src/main/resources/enrichment-topology.yaml`) |
+| `scripts/make-deb.sh` | After `mvn package`, builds `crawl-ingestion-storm.deb` with shaded jar under `/usr/share/crawl-ingestion-storm/lib/` |
+
+Confd key prefix: `crawl-enrichment-topology-{env}` (see `debian/etc/confd/conf.d/crawl-enrichment-topology.toml`). Wrapper script: `crawl-ingestion-storm` (`run-class` / `start-all` per `/etc/default/crawl-ingestion-storm`).
+
+```bash
+mvn clean package
+./scripts/make-deb.sh stage
+```
 
 ## Run (submit topology)
 
@@ -88,12 +105,16 @@ Fill `src/main/resources/enrichment-topology.yaml` (or an external file) with re
 ## Project layout
 
 ```text
+debian/          confd templates + DEBIAN metadata (fk-3p-storm packaging)
+config/          sample CrawlEnrichmentTopology YAML for operators
+scripts/         GCP instance templates, make-deb.sh, optional bucket-key JSON
 src/main/java/com/flipkart/crawl/ingestion/topology/
   TopologyBooter.java, EnrichmentTopologyBuilder.java, Constants.java
   bolt/          AsyncEnrichmentBolt, CentralPublisherBolt, RetryBolt, DLQBolt
   client/        L2Client, L2HttpClient, *TopicProducer
   config/        EnrichmentTopologyConfig, L2ClientConfig, RetryConfig, ...
   guice/         GuiceEnableHook, TopologyModule
+  routing/       PipelineRoutingRegistry, JdbcPipelineRoutingRegistry
   spout/         SpoutFactory, RawEventMapper
   util/          RetryUtil, ConsolidatedPayloadBuilder, RoutingTagsBuilder, ...
   model/         RawEvent, EnrichedEvent, IdRef, EnrichIdsRequest, ...

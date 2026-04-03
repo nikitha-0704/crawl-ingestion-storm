@@ -1,0 +1,10 @@
+#!/bin/bash -e
+
+PAC=_PACKAGE_
+CMD="$1"
+
+[ -f /etc/default/$PAC ] && . /etc/default/$PAC
+
+if [ "$CMD" == "remove" ]; then
+	echo "Did not kill any topologies. You'll have to kill them yourselves."
+fi
